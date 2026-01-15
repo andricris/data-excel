@@ -5,173 +5,382 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Upload Excel ke GitHub</title>
   <style>
-    :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-    body{margin:0;background:#f4f6f8;padding:40px;color:#111}
-    .box{max-width:720px;margin:0 auto;background:#fff;padding:26px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
-    h2{margin:0 0 12px}
-    .muted{color:#6b7280;font-size:12px;margin-top:6px}
-    .row{margin-top:12px}
-    button{width:100%;padding:12px;margin-top:14px;background:#2563eb;color:#fff;border:0;border-radius:10px;cursor:pointer;font-weight:700}
-    button:disabled{opacity:.6;cursor:not-allowed}
-    .kpi{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
-    .chip{flex:1;min-width:180px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:10px}
-    .chip b{display:block;font-size:12px;color:#6b7280}
-    .chip span{display:block;font-size:14px;margin-top:2px}
-    .barwrap{margin-top:12px;height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden}
-    .bar{height:12px;width:0%;background:#22c55e;transition:width .15s}
-    .log{margin-top:12px;background:#0b1220;color:#d1fae5;border-radius:12px;padding:12px;white-space:pre-wrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;max-height:240px;overflow:auto}
-    .danger{color:#fecaca}
-    .ok{color:#bbf7d0}
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background:#f4f6f8; color:#111827; }
+    .wrap { max-width: 980px; margin: 32px auto; padding: 0 16px; }
+    .card { background:#fff; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 18px; }
+    h1 { margin: 0 0 8px; font-size: 22px; }
+    .muted { color:#6b7280; font-size: 13px; }
+    .row { display:flex; gap:12px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+    input[type="file"] { max-width: 100%; }
+    input[type="password"], input[type="text"] {
+      padding:10px 12px; border:1px solid #e5e7eb; border-radius:10px; min-width: 240px;
+    }
+    button {
+      background:#2563eb; color:#fff; border:0; border-radius:10px; padding:10px 14px;
+      cursor:pointer; font-weight:600;
+    }
+    button.secondary { background:#111827; }
+    button.gray { background:#6b7280; }
+    button:disabled { opacity:.55; cursor:not-allowed; }
+    .kpi { display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top: 12px; }
+    .chip { border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px; }
+    .chip b { display:block; font-size:12px; color:#6b7280; margin-bottom: 4px; }
+    .barwrap { margin-top:12px; background:#e5e7eb; border-radius:999px; overflow:hidden; height:12px; }
+    .bar { height:100%; width:0%; background:#22c55e; transition: width .2s ease; }
+    .log { margin-top:12px; background:#0b1220; color:#a7f3d0; border-radius:12px; padding:10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px; max-height:220px; overflow:auto; white-space:pre-wrap;}
+    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top: 14px; }
+    .table { width:100%; border-collapse: collapse; margin-top: 10px; }
+    .table th, .table td { border-bottom:1px solid #e5e7eb; padding:10px 8px; text-align:left; font-size: 13px; }
+    .table th { color:#6b7280; font-weight:600; }
+    .tag { display:inline-block; padding:2px 8px; border-radius: 999px; background:#eef2ff; color:#3730a3; font-size: 12px; }
+    .right { margin-left:auto; }
   </style>
 </head>
+
 <body>
-  <div class="box">
-    <h2>Upload Excel ke GitHub</h2>
+  <div class="wrap">
+    <div class="card">
+      <h1>Upload Excel ke GitHub</h1>
+      <div class="muted">UI (GitHub Pages) → Cloudflare Worker → GitHub Repo (/uploads)</div>
 
-    <div class="row">
-      <input type="file" id="file" accept=".xlsx,.xls,.csv" />
-      <div class="muted" id="fileInfo">Belum ada file dipilih</div>
+      <div class="grid2">
+        <div class="chip">
+          <b>Auth (PIN/Key)</b>
+          <div class="row" style="margin-top:6px">
+            <input id="key" type="password" placeholder="Masukkan PIN/KEY" />
+            <button class="secondary" id="saveKey">Simpan</button>
+            <button class="gray" id="clearKey">Hapus</button>
+            <span class="tag" id="keyStatus">Belum diset</span>
+          </div>
+          <div class="muted" style="margin-top:6px">
+            PIN ini divalidasi di Worker (secret <b>UPLOAD_KEY</b>), bukan di browser.
+          </div>
+        </div>
+
+        <div class="chip">
+          <b>File</b>
+          <div class="row" style="margin-top:6px">
+            <input id="file" type="file" accept=".xlsx,.xls" />
+            <span class="muted" id="fileInfo">Belum ada file dipilih</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi">
+        <div class="chip"><b>Tahap</b><span id="phase">Idle</span></div>
+        <div class="chip"><b>Progress</b><span id="pct">0%</span></div>
+      </div>
+
+      <div class="barwrap"><div class="bar" id="bar"></div></div>
+
+      <div class="row">
+        <button id="btnUpload" disabled>Upload</button>
+        <button id="btnList" class="secondary">Refresh List</button>
+        <span class="right muted" id="hintUrl"></span>
+      </div>
+
+      <div class="log" id="log">Status: menunggu...</div>
+
+      <h3 style="margin:18px 0 8px; font-size:16px;">List file di repo (/uploads)</h3>
+      <div class="muted">Klik Download untuk ambil file dari Worker (auth tetap berlaku).</div>
+      <table class="table" id="table">
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>Ukuran</th>
+            <th>Link Repo</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="4" class="muted">Belum ada data. Klik “Refresh List”.</td></tr>
+        </tbody>
+      </table>
     </div>
-
-    <div class="kpi">
-      <div class="chip"><b>Tahap</b><span id="phase">Idle</span></div>
-      <div class="chip"><b>Progress</b><span id="pct">0%</span></div>
-    </div>
-
-    <div class="barwrap"><div class="bar" id="bar"></div></div>
-
-    <button id="btn" onclick="upload()">Upload</button>
-
-    <div class="log" id="log">Status: menunggu upload...</div>
   </div>
 
 <script>
-/**
- * WAJIB: isi dengan URL Worker Anda (bukan halaman preview, tapi URL worker yang bisa diakses).
- * Contoh:
- * https://upload-excel-github-api.crissrinanto6.workers.dev
- */
-const WORKER_URL = "https://upload-excel-github-api.crissrinanto6.workers.dev"; // <-- GANTI
+  // ================== CONFIG ==================
+  // Ganti dengan URL worker kamu (tanpa slash terakhir)
+  const WORKER_BASE = "https://upload-excel-github-api.crissrinanto6.workers.dev";
+  const ENDPOINT_UPLOAD = WORKER_BASE + "/upload";
+  const ENDPOINT_LIST   = WORKER_BASE + "/list";
+  const ENDPOINT_DL     = WORKER_BASE + "/download";
 
-const el = (id) => document.getElementById(id);
+  const el = (id) => document.getElementById(id);
 
-function setProgress(phase, pct){
-  el("phase").textContent = phase;
-  el("pct").textContent = `${pct}%`;
-  el("bar").style.width = `${pct}%`;
-}
-
-function logLine(msg, type="ok"){
-  const prefix = type === "danger" ? "ERROR: " : "OK: ";
-  el("log").textContent = `${prefix}${msg}\n` + el("log").textContent;
-  el("log").scrollTop = 0;
-}
-
-el("file").addEventListener("change", () => {
-  const f = el("file").files[0];
-  if(!f){
-    el("fileInfo").textContent = "Belum ada file dipilih";
-    return;
+  function logLine(msg) {
+    el("log").textContent = `${msg}\n` + el("log").textContent;
   }
-  const mb = (f.size / (1024*1024)).toFixed(2);
-  el("fileInfo").textContent = `File: ${f.name} (${mb} MB)`;
-});
 
-function safeName(name){
-  // aman buat path github
-  return name.replace(/[^\w.\-]+/g, "_");
-}
+  function setProgress(phase, pct) {
+    el("phase").textContent = phase;
+    el("pct").textContent = `${pct}%`;
+    el("bar").style.width = `${pct}%`;
+  }
 
-function readAsBase64(file){
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onerror = () => reject(new Error("Gagal membaca file"));
-    r.onload = () => {
-      const res = r.result; // data:...;base64,xxxx
-      const base64 = String(res).split(",")[1] || "";
-      resolve(base64);
-    };
-    r.readAsDataURL(file);
+  function getKey() {
+    return sessionStorage.getItem("UPLOAD_KEY") || "";
+  }
+
+  function updateKeyUI() {
+    const k = getKey();
+    el("keyStatus").textContent = k ? "Key tersimpan" : "Belum diset";
+    el("keyStatus").style.background = k ? "#dcfce7" : "#fee2e2";
+    el("keyStatus").style.color = k ? "#166534" : "#991b1b";
+    el("hintUrl").textContent = `Worker: ${WORKER_BASE}`;
+    updateUploadButton();
+  }
+
+  function updateUploadButton() {
+    const ok = !!getKey() && el("file").files && el("file").files[0];
+    el("btnUpload").disabled = !ok;
+  }
+
+  // ================== AUTH UI ==================
+  el("saveKey").addEventListener("click", () => {
+    const v = el("key").value.trim();
+    if (!v) {
+      logLine("ERROR: Key kosong.");
+      return;
+    }
+    sessionStorage.setItem("UPLOAD_KEY", v);
+    el("key").value = "";
+    logLine("OK: Key tersimpan di sessionStorage (browser).");
+    updateKeyUI();
   });
-}
 
-async function upload(){
-  const f = el("file").files[0];
-  if(!f){
-    alert("Pilih file dulu.");
-    return;
+  el("clearKey").addEventListener("click", () => {
+    sessionStorage.removeItem("UPLOAD_KEY");
+    logLine("OK: Key dihapus.");
+    updateKeyUI();
+  });
+
+  // ================== FILE ==================
+  el("file").addEventListener("change", () => {
+    const f = el("file").files[0];
+    if (!f) {
+      el("fileInfo").textContent = "Belum ada file dipilih";
+      updateUploadButton();
+      return;
+    }
+    const mb = (f.size / (1024*1024)).toFixed(2);
+    el("fileInfo").textContent = `File: ${f.name} (${mb} MB)`;
+    logLine(`OK: File dipilih: ${f.name} (${mb} MB)`);
+    setProgress("Ready", 0);
+    updateUploadButton();
+  });
+
+  // ================== UTIL ==================
+  function readFileAsBase64WithProgress(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 50); // 0-50 untuk baca file
+          setProgress("Membaca file (local)", pct);
+        }
+      };
+
+      reader.onerror = () => reject(new Error("Gagal membaca file"));
+      reader.onload = () => {
+        // result berupa data:...base64,xxxx
+        const result = String(reader.result || "");
+        const idx = result.indexOf("base64,");
+        if (idx < 0) return reject(new Error("Format base64 tidak valid"));
+        const base64 = result.slice(idx + 7);
+        setProgress("Base64 siap", 50);
+        resolve(base64);
+      };
+
+      reader.readAsDataURL(file);
+    });
   }
 
-  el("btn").disabled = true;
-  el("log").textContent = "Status: mulai...\n";
+  function xhrPostJSONWithProgress(url, bodyObj, key) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url, true);
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.setRequestHeader("X-Upload-Key", key);
 
-  try{
-    setProgress("Baca file", 5);
-    logLine("Mulai baca file ke memory...");
-    const base64 = await readAsBase64(f);
-    logLine("File berhasil dibaca (base64).");
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          // 50-95 untuk progres upload request ke Worker
+          const pct = 50 + Math.round((e.loaded / e.total) * 45);
+          setProgress("Mengirim ke Worker", pct);
+        }
+      };
 
-    setProgress("Kirim ke Worker", 10);
-    const payload = {
-      filename: safeName(f.name),
-      contentBase64: base64
-      // OPTIONAL kalau worker Anda mendukung:
-      // path: "uploads",
-      // message: "upload file via web"
-    };
+      xhr.onload = () => {
+        // 95-100 untuk respon server
+        setProgress("Menunggu respon Worker", 95);
+        resolve({ status: xhr.status, text: xhr.responseText });
+      };
 
-    // Pakai XHR agar ada progress upload "real"
-    await xhrPostJson(`${WORKER_URL}/upload`, payload);
-
-    setProgress("Selesai", 100);
-    logLine("Upload selesai. Cek repo GitHub Anda.", "ok");
-
-  }catch(err){
-    setProgress("Error", 100);
-    logLine(err.message || String(err), "danger");
-  }finally{
-    el("btn").disabled = false;
+      xhr.onerror = () => reject(new Error("Network error saat POST ke Worker"));
+      xhr.send(JSON.stringify(bodyObj));
+    });
   }
-}
 
-function xhrPostJson(url, data){
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", url, true);
-    xhr.setRequestHeader("Content-Type", "application/json");
+  // ================== UPLOAD ==================
+  async function upload() {
+    const key = getKey();
+    const f = el("file").files[0];
+    if (!key) return logLine("ERROR: Key belum di-set.");
+    if (!f) return logLine("ERROR: File belum dipilih.");
 
-    // Progress upload (yang benar-benar upload, bukan sekadar baca file)
-    xhr.upload.onprogress = (e) => {
-      if(e.lengthComputable){
-        const pct = Math.max(10, Math.round(10 + (e.loaded / e.total) * 80)); // 10..90
-        setProgress("Upload (network)", pct);
-      }else{
-        setProgress("Upload (network)", 30);
+    el("btnUpload").disabled = true;
+    setProgress("Mulai", 0);
+    logLine("Status: mulai upload...");
+
+    try {
+      // 1) read file (progress 0-50)
+      const contentBase64 = await readFileAsBase64WithProgress(f);
+      logLine("OK: File berhasil dibaca (base64).");
+
+      // 2) send to worker (progress 50-95)
+      const res = await xhrPostJSONWithProgress(ENDPOINT_UPLOAD, {
+        filename: f.name,
+        contentBase64
+      }, key);
+
+      // 3) handle response
+      let ok = false;
+      try {
+        const j = JSON.parse(res.text);
+        // GitHub API sukses biasanya 201
+        ok = (res.status === 201 || res.status === 200);
+        if (!ok) logLine(`ERROR: Worker/GitHub response: ${res.status} ${JSON.stringify(j)}`);
+        else logLine(`OK: Upload sukses. Status HTTP: ${res.status}`);
+      } catch {
+        // jika bukan JSON
+        ok = (res.status === 201 || res.status === 200);
+        if (!ok) logLine(`ERROR: Response non-JSON (${res.status}): ${res.text.slice(0, 200)}`);
+        else logLine(`OK: Upload sukses. Status HTTP: ${res.status}`);
       }
-    };
 
-    xhr.onload = () => {
-      const ok = xhr.status >= 200 && xhr.status < 300;
-      if(!ok){
-        reject(new Error(`Worker error ${xhr.status}: ${xhr.responseText || "No body"}`));
+      setProgress(ok ? "Selesai" : "Error", 100);
+
+      if (ok) {
+        // refresh list otomatis
+        await refreshList();
+      }
+    } catch (e) {
+      setProgress("Error", 100);
+      logLine("ERROR: " + (e?.message || e));
+    } finally {
+      updateUploadButton();
+    }
+  }
+
+  el("btnUpload").addEventListener("click", upload);
+
+  // ================== LIST & DOWNLOAD ==================
+  function fmtSize(n) {
+    if (!Number.isFinite(n)) return "-";
+    if (n < 1024) return `${n} B`;
+    if (n < 1024*1024) return `${(n/1024).toFixed(1)} KB`;
+    return `${(n/(1024*1024)).toFixed(2)} MB`;
+  }
+
+  async function refreshList() {
+    const key = getKey();
+    if (!key) {
+      logLine("ERROR: Key belum di-set. Tidak bisa list.");
+      return;
+    }
+
+    logLine("Status: ambil list file...");
+    el("tbody").innerHTML = `<tr><td colspan="4" class="muted">Loading...</td></tr>`;
+
+    try {
+      const r = await fetch(ENDPOINT_LIST, {
+        method: "GET",
+        headers: { "X-Upload-Key": key }
+      });
+
+      const txt = await r.text();
+      let data;
+      try { data = JSON.parse(txt); } catch { data = null; }
+
+      if (!r.ok) {
+        el("tbody").innerHTML = `<tr><td colspan="4" class="muted">Gagal list: ${r.status}</td></tr>`;
+        logLine(`ERROR: list gagal (${r.status}): ${txt.slice(0, 200)}`);
         return;
       }
-      // sukses
-      try{
-        const json = JSON.parse(xhr.responseText || "{}");
-        if(json && json.ok === false){
-          reject(new Error(json.error || "Upload gagal"));
-          return;
-        }
-      }catch(_){}
-      setProgress("Finalize", 95);
-      resolve(true);
-    };
 
-    xhr.onerror = () => reject(new Error("Network error / CORS blocked (cek CORS Worker & preflight OPTIONS)"));
-    xhr.send(JSON.stringify(data));
-  });
-}
+      const files = (data && data.files) ? data.files : [];
+      if (!files.length) {
+        el("tbody").innerHTML = `<tr><td colspan="4" class="muted">Folder /uploads kosong.</td></tr>`;
+        logLine("OK: List sukses, tapi folder kosong.");
+        return;
+      }
+
+      el("tbody").innerHTML = files.map(f => `
+        <tr>
+          <td>${f.name}</td>
+          <td>${fmtSize(f.size)}</td>
+          <td><a href="${f.html_url}" target="_blank" rel="noreferrer">View</a></td>
+          <td><button class="secondary" data-dl="${encodeURIComponent(f.name)}">Download</button></td>
+        </tr>
+      `).join("");
+
+      // bind download buttons
+      el("tbody").querySelectorAll("button[data-dl]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const name = decodeURIComponent(btn.getAttribute("data-dl") || "");
+          await downloadFile(name);
+        });
+      });
+
+      logLine(`OK: List sukses (${files.length} file).`);
+    } catch (e) {
+      el("tbody").innerHTML = `<tr><td colspan="4" class="muted">Network error.</td></tr>`;
+      logLine("ERROR: " + (e?.message || e));
+    }
+  }
+
+  async function downloadFile(name) {
+    const key = getKey();
+    if (!key) return logLine("ERROR: Key belum di-set. Tidak bisa download.");
+
+    logLine(`Status: download ${name}...`);
+    try {
+      const r = await fetch(`${ENDPOINT_DL}?name=${encodeURIComponent(name)}`, {
+        method: "GET",
+        headers: { "X-Upload-Key": key }
+      });
+
+      if (!r.ok) {
+        const t = await r.text();
+        logLine(`ERROR: download gagal (${r.status}): ${t.slice(0, 200)}`);
+        return;
+      }
+
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      URL.revokeObjectURL(url);
+      logLine("OK: Download selesai.");
+    } catch (e) {
+      logLine("ERROR: " + (e?.message || e));
+    }
+  }
+
+  el("btnList").addEventListener("click", refreshList);
+
+  // init
+  updateKeyUI();
 </script>
 </body>
 </html>
