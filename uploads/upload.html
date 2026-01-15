@@ -6,28 +6,30 @@
   <title>Upload Excel ke GitHub</title>
   <style>
     :root{
-      --bg:#f6f7fb;
-      --card:#ffffff;
-      --text:#0f172a;
-      --muted:#64748b;
-      --line:#e5e7eb;
-      --primary:#2563eb;
-      --primary2:#1d4ed8;
-      --ok:#16a34a;
-      --warn:#f59e0b;
-      --bad:#dc2626;
-      --chip:#f1f5f9;
-      --shadow: 0 10px 30px rgba(2,6,23,.08);
+      --bg:#020617;
+      --card:#0b1220;
+      --text:#e2e8f0;
+      --muted:#7c8aa5;
+      --line:#1f2937;
+      --primary:#22c55e;
+      --primary2:#16a34a;
+      --ok:#22c55e;
+      --warn:#facc15;
+      --bad:#f97316;
+      --chip:#0f172a;
+      --shadow: 0 20px 40px rgba(15,23,42,.6);
       --radius:14px;
+      --glow: 0 0 18px rgba(34,197,94,.35);
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
-      --sans: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",Arial,"Apple Color Emoji","Segoe UI Emoji";
+      --sans: "Share Tech Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
     }
     *{box-sizing:border-box}
     body{
       margin:0;
       font-family:var(--sans);
-      background:var(--bg);
+      background:radial-gradient(circle at top, #0f172a, #020617 55%);
       color:var(--text);
+      min-height:100vh;
     }
     .wrap{
       max-width:1100px;
@@ -35,21 +37,28 @@
       padding:0 16px;
     }
     .card{
-      background:var(--card);
-      border:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(15,23,42,.9), rgba(2,6,23,.9));
+      border:1px solid rgba(34,197,94,.25);
       border-radius:var(--radius);
       box-shadow:var(--shadow);
       padding:18px;
+      position:relative;
+      overflow:hidden;
+    }
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(120deg, transparent 0%, rgba(34,197,94,.08) 50%, transparent 100%);
+      opacity:.35;
+      pointer-events:none;
     }
     h1{
-      font-size:22px;
-      margin:0 0 4px;
-      letter-spacing:.2px;
-    }
-    .sub{
-      color:var(--muted);
-      font-size:13px;
-      margin:0 0 14px;
+      font-size:24px;
+      margin:0 0 12px;
+      letter-spacing:.4px;
+      color:#d1fae5;
+      text-shadow:var(--glow);
     }
     .grid{
       display:grid;
@@ -60,10 +69,11 @@
       .grid{grid-template-columns:1fr}
     }
     .panel{
-      border:1px solid var(--line);
+      border:1px solid rgba(148,163,184,.2);
       border-radius:12px;
       padding:12px;
-      background:#fff;
+      background:rgba(2,6,23,.85);
+      box-shadow:inset 0 0 0 1px rgba(34,197,94,.08);
     }
     .label{
       font-size:12px;
@@ -81,40 +91,51 @@
       width:320px;
       max-width:100%;
       padding:10px 12px;
-      border:1px solid var(--line);
+      border:1px solid rgba(148,163,184,.3);
       border-radius:10px;
       outline:none;
       font-size:13px;
+      background:#020617;
+      color:var(--text);
+      box-shadow:inset 0 0 0 1px rgba(34,197,94,.1);
     }
     input[type="file"]{
       font-size:13px;
       max-width:100%;
+      color:var(--muted);
     }
     .btn{
-      border:0;
+      border:1px solid rgba(34,197,94,.4);
       border-radius:10px;
       padding:10px 14px;
       font-weight:700;
       cursor:pointer;
-      color:#fff;
-      background:var(--primary);
+      color:#03120a;
+      background:linear-gradient(120deg, #22c55e, #4ade80);
+      box-shadow:var(--glow);
     }
-    .btn:hover{background:var(--primary2)}
+    .btn:hover{background:linear-gradient(120deg, #16a34a, #22c55e)}
     .btn:disabled{opacity:.55; cursor:not-allowed}
     .btn.secondary{
-      background:#0f172a;
+      background:#0b1220;
+      color:var(--text);
+      border-color:rgba(148,163,184,.3);
+      box-shadow:none;
     }
-    .btn.secondary:hover{background:#111827}
+    .btn.secondary:hover{background:#0f172a}
     .btn.gray{
-      background:#334155;
+      background:#111827;
+      color:#cbd5f5;
+      border-color:rgba(148,163,184,.2);
+      box-shadow:none;
     }
-    .btn.gray:hover{background:#1f2937}
+    .btn.gray:hover{background:#0f172a}
     .pill{
       display:inline-flex;
       align-items:center;
       gap:8px;
       background:var(--chip);
-      border:1px solid var(--line);
+      border:1px solid rgba(148,163,184,.2);
       border-radius:999px;
       padding:8px 10px;
       font-size:12px;
@@ -131,25 +152,25 @@
       .kpis{grid-template-columns:1fr}
     }
     .kpi{
-      border:1px solid var(--line);
+      border:1px solid rgba(148,163,184,.2);
       border-radius:12px;
       padding:10px;
-      background:#fff;
+      background:rgba(15,23,42,.7);
     }
     .kpi .t{color:var(--muted); font-size:12px; font-weight:600}
     .kpi .v{margin-top:6px; font-weight:800}
     .barwrap{
       margin-top:10px;
-      border:1px solid var(--line);
+      border:1px solid rgba(148,163,184,.2);
       border-radius:999px;
       overflow:hidden;
       height:12px;
-      background:#eef2ff;
+      background:#0f172a;
     }
     .bar{
       height:100%;
       width:0%;
-      background: linear-gradient(90deg, #22c55e, #16a34a);
+      background: linear-gradient(90deg, #22c55e, #4ade80);
       transition: width .12s ease;
     }
     .actions{
@@ -168,9 +189,9 @@
     .log{
       margin-top:12px;
       border-radius:12px;
-      border:1px solid var(--line);
-      background:#0b1220;
-      color:#c7f9cc;
+      border:1px solid rgba(34,197,94,.3);
+      background:#020617;
+      color:#86efac;
       padding:12px;
       font-family:var(--mono);
       font-size:12px;
@@ -191,7 +212,7 @@
       font-size:13px;
     }
     th, td{
-      border-bottom:1px solid var(--line);
+      border-bottom:1px solid rgba(148,163,184,.15);
       padding:10px 8px;
       text-align:left;
       vertical-align:middle;
@@ -202,7 +223,7 @@
       letter-spacing:.2px;
       font-weight:800;
     }
-    a{color:var(--primary); text-decoration:none}
+    a{color:#86efac; text-decoration:none}
     a:hover{text-decoration:underline}
     .right{ text-align:right }
     .small{ font-size:12px; color:var(--muted) }
@@ -211,8 +232,8 @@
       font-size:11px;
       padding:3px 8px;
       border-radius:999px;
-      border:1px solid var(--line);
-      background:#fff;
+      border:1px solid rgba(148,163,184,.25);
+      background:#0f172a;
       color:var(--muted);
       font-weight:700;
     }
@@ -224,7 +245,6 @@
   <div class="wrap">
     <div class="card">
       <h1>Upload Excel ke GitHub</h1>
-      <p class="sub">UI (GitHub Pages) → Cloudflare Worker → GitHub Repo (<code>/uploads</code>)</p>
 
       <div class="grid">
         <div class="panel">
@@ -268,9 +288,6 @@
               <button class="btn" id="uploadBtn">Upload</button>
               <button class="btn secondary" id="refreshBtn">Refresh List</button>
             </div>
-            <div class="muted">
-              Worker: <span id="workerUrlText"></span>
-            </div>
           </div>
 
           <div class="log" id="log">Status: menunggu...</div>
@@ -281,7 +298,6 @@
         <div class="row" style="justify-content:space-between">
           <div>
             <b>List file Excel di repo</b> <span class="badge">hanya .xlsx/.xls</span>
-            <div class="small">Folder: <code>/uploads</code> (di repo)</div>
           </div>
         </div>
 
@@ -314,7 +330,6 @@ const ENDPOINT_DELETE = WORKER_BASE + "/delete";
 
 /** ====== UTIL ====== */
 const el = (id) => document.getElementById(id);
-el("workerUrlText").textContent = WORKER_BASE;
 
 function logLine(msg){
   el("log").textContent = msg + "\n" + el("log").textContent;
@@ -516,7 +531,7 @@ el("refreshBtn").addEventListener("click", refreshList);
 function renderTable(files){
   const tb = el("tbody");
   if (!files.length){
-    tb.innerHTML = `<tr><td colspan="4" class="small">Tidak ada file Excel di <code>/uploads</code>.</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="4" class="small">Tidak ada file Excel tersedia.</td></tr>`;
     return;
   }
 
