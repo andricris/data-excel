@@ -5,382 +5,630 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Upload Excel ke GitHub</title>
   <style>
-    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    body { margin: 0; background:#f4f6f8; color:#111827; }
-    .wrap { max-width: 980px; margin: 32px auto; padding: 0 16px; }
-    .card { background:#fff; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 18px; }
-    h1 { margin: 0 0 8px; font-size: 22px; }
-    .muted { color:#6b7280; font-size: 13px; }
-    .row { display:flex; gap:12px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
-    input[type="file"] { max-width: 100%; }
-    input[type="password"], input[type="text"] {
-      padding:10px 12px; border:1px solid #e5e7eb; border-radius:10px; min-width: 240px;
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#e5e7eb;
+      --primary:#2563eb;
+      --primary2:#1d4ed8;
+      --ok:#16a34a;
+      --warn:#f59e0b;
+      --bad:#dc2626;
+      --chip:#f1f5f9;
+      --shadow: 0 10px 30px rgba(2,6,23,.08);
+      --radius:14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",Arial,"Apple Color Emoji","Segoe UI Emoji";
     }
-    button {
-      background:#2563eb; color:#fff; border:0; border-radius:10px; padding:10px 14px;
-      cursor:pointer; font-weight:600;
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background:var(--bg);
+      color:var(--text);
     }
-    button.secondary { background:#111827; }
-    button.gray { background:#6b7280; }
-    button:disabled { opacity:.55; cursor:not-allowed; }
-    .kpi { display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top: 12px; }
-    .chip { border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px; }
-    .chip b { display:block; font-size:12px; color:#6b7280; margin-bottom: 4px; }
-    .barwrap { margin-top:12px; background:#e5e7eb; border-radius:999px; overflow:hidden; height:12px; }
-    .bar { height:100%; width:0%; background:#22c55e; transition: width .2s ease; }
-    .log { margin-top:12px; background:#0b1220; color:#a7f3d0; border-radius:12px; padding:10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px; max-height:220px; overflow:auto; white-space:pre-wrap;}
-    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top: 14px; }
-    .table { width:100%; border-collapse: collapse; margin-top: 10px; }
-    .table th, .table td { border-bottom:1px solid #e5e7eb; padding:10px 8px; text-align:left; font-size: 13px; }
-    .table th { color:#6b7280; font-weight:600; }
-    .tag { display:inline-block; padding:2px 8px; border-radius: 999px; background:#eef2ff; color:#3730a3; font-size: 12px; }
-    .right { margin-left:auto; }
+    .wrap{
+      max-width:1100px;
+      margin:28px auto;
+      padding:0 16px;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:18px;
+    }
+    h1{
+      font-size:22px;
+      margin:0 0 4px;
+      letter-spacing:.2px;
+    }
+    .sub{
+      color:var(--muted);
+      font-size:13px;
+      margin:0 0 14px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    @media (max-width: 880px){
+      .grid{grid-template-columns:1fr}
+    }
+    .panel{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+      background:#fff;
+    }
+    .label{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+      font-weight:600;
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    input[type="password"], input[type="text"]{
+      width:320px;
+      max-width:100%;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      outline:none;
+      font-size:13px;
+    }
+    input[type="file"]{
+      font-size:13px;
+      max-width:100%;
+    }
+    .btn{
+      border:0;
+      border-radius:10px;
+      padding:10px 14px;
+      font-weight:700;
+      cursor:pointer;
+      color:#fff;
+      background:var(--primary);
+    }
+    .btn:hover{background:var(--primary2)}
+    .btn:disabled{opacity:.55; cursor:not-allowed}
+    .btn.secondary{
+      background:#0f172a;
+    }
+    .btn.secondary:hover{background:#111827}
+    .btn.gray{
+      background:#334155;
+    }
+    .btn.gray:hover{background:#1f2937}
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      background:var(--chip);
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:8px 10px;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .pill b{color:var(--text)}
+    .kpis{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+    @media (max-width: 520px){
+      .kpis{grid-template-columns:1fr}
+    }
+    .kpi{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+      background:#fff;
+    }
+    .kpi .t{color:var(--muted); font-size:12px; font-weight:600}
+    .kpi .v{margin-top:6px; font-weight:800}
+    .barwrap{
+      margin-top:10px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      overflow:hidden;
+      height:12px;
+      background:#eef2ff;
+    }
+    .bar{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, #22c55e, #16a34a);
+      transition: width .12s ease;
+    }
+    .actions{
+      margin-top:12px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .muted{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.4;
+    }
+    .log{
+      margin-top:12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#0b1220;
+      color:#c7f9cc;
+      padding:12px;
+      font-family:var(--mono);
+      font-size:12px;
+      white-space:pre-wrap;
+      min-height:110px;
+      max-height:220px;
+      overflow:auto;
+    }
+    .listcard{
+      margin-top:14px;
+      border-top:1px dashed var(--line);
+      padding-top:14px;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+      font-size:13px;
+    }
+    th, td{
+      border-bottom:1px solid var(--line);
+      padding:10px 8px;
+      text-align:left;
+      vertical-align:middle;
+    }
+    th{
+      color:var(--muted);
+      font-size:12px;
+      letter-spacing:.2px;
+      font-weight:800;
+    }
+    a{color:var(--primary); text-decoration:none}
+    a:hover{text-decoration:underline}
+    .right{ text-align:right }
+    .small{ font-size:12px; color:var(--muted) }
+    .badge{
+      display:inline-block;
+      font-size:11px;
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--muted);
+      font-weight:700;
+    }
+    .ok{ color: var(--ok) }
+    .bad{ color: var(--bad) }
   </style>
 </head>
-
 <body>
   <div class="wrap">
     <div class="card">
       <h1>Upload Excel ke GitHub</h1>
-      <div class="muted">UI (GitHub Pages) → Cloudflare Worker → GitHub Repo (/uploads)</div>
+      <p class="sub">UI (GitHub Pages) → Cloudflare Worker → GitHub Repo (<code>/uploads</code>)</p>
 
-      <div class="grid2">
-        <div class="chip">
-          <b>Auth (PIN/Key)</b>
-          <div class="row" style="margin-top:6px">
-            <input id="key" type="password" placeholder="Masukkan PIN/KEY" />
-            <button class="secondary" id="saveKey">Simpan</button>
-            <button class="gray" id="clearKey">Hapus</button>
-            <span class="tag" id="keyStatus">Belum diset</span>
+      <div class="grid">
+        <div class="panel">
+          <div class="label">Auth (PIN/Key)</div>
+          <div class="row">
+            <input id="key" type="password" placeholder="Masukkan PIN/KEY" autocomplete="off" />
+            <button class="btn secondary" id="saveKeyBtn">Simpan</button>
+            <button class="btn gray" id="clearKeyBtn">Hapus</button>
           </div>
-          <div class="muted" style="margin-top:6px">
-            PIN ini divalidasi di Worker (secret <b>UPLOAD_KEY</b>), bukan di browser.
+          <div style="margin-top:8px" class="pill">
+            <span id="keyState" class="badge">Belum ada key</span>
+            <span class="small">Key disimpan di <b>sessionStorage</b> (hilang saat browser ditutup)</span>
           </div>
+          <p class="muted" style="margin:10px 0 0">
+            PIN divalidasi di Worker (secret <b>UPLOAD_KEY</b>), bukan di browser.
+          </p>
         </div>
 
-        <div class="chip">
-          <b>File</b>
-          <div class="row" style="margin-top:6px">
+        <div class="panel">
+          <div class="label">File</div>
+          <div class="row">
             <input id="file" type="file" accept=".xlsx,.xls" />
-            <span class="muted" id="fileInfo">Belum ada file dipilih</span>
           </div>
+          <div class="muted" style="margin-top:8px" id="fileInfo">Belum ada file dipilih</div>
+
+          <div class="kpis">
+            <div class="kpi">
+              <div class="t">Tahap</div>
+              <div class="v" id="phase">Idle</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Progress (real upload)</div>
+              <div class="v" id="pct">0%</div>
+            </div>
+          </div>
+
+          <div class="barwrap"><div class="bar" id="bar"></div></div>
+
+          <div class="actions">
+            <div class="row">
+              <button class="btn" id="uploadBtn">Upload</button>
+              <button class="btn secondary" id="refreshBtn">Refresh List</button>
+            </div>
+            <div class="muted">
+              Worker: <span id="workerUrlText"></span>
+            </div>
+          </div>
+
+          <div class="log" id="log">Status: menunggu...</div>
         </div>
       </div>
 
-      <div class="kpi">
-        <div class="chip"><b>Tahap</b><span id="phase">Idle</span></div>
-        <div class="chip"><b>Progress</b><span id="pct">0%</span></div>
+      <div class="listcard">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <b>List file Excel di repo</b> <span class="badge">hanya .xlsx/.xls</span>
+            <div class="small">Folder: <code>/uploads</code> (di repo)</div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Nama</th>
+              <th class="right">Ukuran</th>
+              <th>Link Repo</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="4" class="small">Klik “Refresh List” untuk memuat.</td></tr>
+          </tbody>
+        </table>
       </div>
 
-      <div class="barwrap"><div class="bar" id="bar"></div></div>
-
-      <div class="row">
-        <button id="btnUpload" disabled>Upload</button>
-        <button id="btnList" class="secondary">Refresh List</button>
-        <span class="right muted" id="hintUrl"></span>
-      </div>
-
-      <div class="log" id="log">Status: menunggu...</div>
-
-      <h3 style="margin:18px 0 8px; font-size:16px;">List file di repo (/uploads)</h3>
-      <div class="muted">Klik Download untuk ambil file dari Worker (auth tetap berlaku).</div>
-      <table class="table" id="table">
-        <thead>
-          <tr>
-            <th>Nama</th>
-            <th>Ukuran</th>
-            <th>Link Repo</th>
-            <th>Aksi</th>
-          </tr>
-        </thead>
-        <tbody id="tbody">
-          <tr><td colspan="4" class="muted">Belum ada data. Klik “Refresh List”.</td></tr>
-        </tbody>
-      </table>
     </div>
   </div>
 
 <script>
-  // ================== CONFIG ==================
-  // Ganti dengan URL worker kamu (tanpa slash terakhir)
-  const WORKER_BASE = "https://upload-excel-github-api.crissrinanto6.workers.dev";
-  const ENDPOINT_UPLOAD = WORKER_BASE + "/upload";
-  const ENDPOINT_LIST   = WORKER_BASE + "/list";
-  const ENDPOINT_DL     = WORKER_BASE + "/download";
+/** ====== KONFIG ====== */
+// GANTI sesuai URL worker kamu
+const WORKER_BASE = "https://upload-excel-github-api.crissrinanto6.workers.dev";
+const ENDPOINT_UPLOAD = WORKER_BASE + "/upload";
+const ENDPOINT_LIST   = WORKER_BASE + "/list";
+const ENDPOINT_DL     = WORKER_BASE + "/download";
+const ENDPOINT_DELETE = WORKER_BASE + "/delete";
 
-  const el = (id) => document.getElementById(id);
+/** ====== UTIL ====== */
+const el = (id) => document.getElementById(id);
+el("workerUrlText").textContent = WORKER_BASE;
 
-  function logLine(msg) {
-    el("log").textContent = `${msg}\n` + el("log").textContent;
+function logLine(msg){
+  el("log").textContent = msg + "\n" + el("log").textContent;
+}
+function setProgress(phase, pct){
+  el("phase").textContent = phase;
+  el("pct").textContent = `${pct}%`;
+  el("bar").style.width = `${pct}%`;
+}
+function bytesToMB(n){
+  return (n / (1024 * 1024)).toFixed(2);
+}
+function getKey(){
+  return sessionStorage.getItem("UPLOAD_KEY") || "";
+}
+function setKeyUI(){
+  const k = getKey();
+  if (k){
+    el("keyState").textContent = "Key tersimpan";
+    el("keyState").classList.remove("bad");
+    el("keyState").classList.add("ok");
+  } else {
+    el("keyState").textContent = "Belum ada key";
+    el("keyState").classList.remove("ok");
+    el("keyState").classList.add("bad");
   }
+}
+setKeyUI();
 
-  function setProgress(phase, pct) {
-    el("phase").textContent = phase;
-    el("pct").textContent = `${pct}%`;
-    el("bar").style.width = `${pct}%`;
+/** ====== EVENTS ====== */
+el("saveKeyBtn").addEventListener("click", () => {
+  const k = (el("key").value || "").trim();
+  if (!k) return alert("Masukkan PIN/KEY dulu.");
+  sessionStorage.setItem("UPLOAD_KEY", k);
+  el("key").value = "";
+  setKeyUI();
+  logLine("OK: Key tersimpan di sessionStorage.");
+});
+
+el("clearKeyBtn").addEventListener("click", () => {
+  sessionStorage.removeItem("UPLOAD_KEY");
+  setKeyUI();
+  logLine("OK: Key dihapus dari sessionStorage.");
+});
+
+el("file").addEventListener("change", () => {
+  const f = el("file").files && el("file").files[0];
+  if (!f){
+    el("fileInfo").textContent = "Belum ada file dipilih";
+    return;
   }
+  el("fileInfo").textContent = `File: ${f.name} (${bytesToMB(f.size)} MB)`;
+  setProgress("Siap", 0);
+});
 
-  function getKey() {
-    return sessionStorage.getItem("UPLOAD_KEY") || "";
-  }
-
-  function updateKeyUI() {
-    const k = getKey();
-    el("keyStatus").textContent = k ? "Key tersimpan" : "Belum diset";
-    el("keyStatus").style.background = k ? "#dcfce7" : "#fee2e2";
-    el("keyStatus").style.color = k ? "#166534" : "#991b1b";
-    el("hintUrl").textContent = `Worker: ${WORKER_BASE}`;
-    updateUploadButton();
-  }
-
-  function updateUploadButton() {
-    const ok = !!getKey() && el("file").files && el("file").files[0];
-    el("btnUpload").disabled = !ok;
-  }
-
-  // ================== AUTH UI ==================
-  el("saveKey").addEventListener("click", () => {
-    const v = el("key").value.trim();
-    if (!v) {
-      logLine("ERROR: Key kosong.");
-      return;
-    }
-    sessionStorage.setItem("UPLOAD_KEY", v);
-    el("key").value = "";
-    logLine("OK: Key tersimpan di sessionStorage (browser).");
-    updateKeyUI();
+/** ====== READ BASE64 ====== */
+function readFileAsBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Gagal membaca file"));
+    reader.onload = () => {
+      const result = reader.result || "";
+      // result = data:...;base64,xxxx
+      const base64 = String(result).split(",")[1] || "";
+      resolve(base64);
+    };
+    reader.readAsDataURL(file);
   });
+}
 
-  el("clearKey").addEventListener("click", () => {
-    sessionStorage.removeItem("UPLOAD_KEY");
-    logLine("OK: Key dihapus.");
-    updateKeyUI();
+/** ====== REAL UPLOAD PROGRESS via XHR ====== */
+function xhrJson(url, { method="POST", headers={}, bodyObj=null, onProgress=null } = {}){
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, url, true);
+    for (const [k,v] of Object.entries(headers)) xhr.setRequestHeader(k, v);
+
+    xhr.responseType = "text";
+
+    xhr.upload.onprogress = (evt) => {
+      if (evt.lengthComputable && typeof onProgress === "function"){
+        const pct = Math.round((evt.loaded / evt.total) * 100);
+        onProgress(pct);
+      }
+    };
+
+    xhr.onload = () => {
+      resolve({
+        status: xhr.status,
+        text: xhr.responseText
+      });
+    };
+    xhr.onerror = () => reject(new Error("Network error / CORS blocked"));
+    xhr.ontimeout = () => reject(new Error("Request timeout"));
+
+    const payload = bodyObj ? JSON.stringify(bodyObj) : null;
+    xhr.send(payload);
   });
+}
 
-  // ================== FILE ==================
-  el("file").addEventListener("change", () => {
-    const f = el("file").files[0];
-    if (!f) {
-      el("fileInfo").textContent = "Belum ada file dipilih";
-      updateUploadButton();
-      return;
-    }
-    const mb = (f.size / (1024*1024)).toFixed(2);
-    el("fileInfo").textContent = `File: ${f.name} (${mb} MB)`;
-    logLine(`OK: File dipilih: ${f.name} (${mb} MB)`);
-    setProgress("Ready", 0);
-    updateUploadButton();
-  });
+/** ====== UPLOAD ====== */
+async function doUpload(){
+  const key = getKey();
+  if (!key) return alert("Key belum disimpan. Isi PIN/KEY lalu klik Simpan.");
 
-  // ================== UTIL ==================
-  function readFileAsBase64WithProgress(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
+  const f = el("file").files && el("file").files[0];
+  if (!f) return alert("Pilih file Excel dulu.");
 
-      reader.onprogress = (e) => {
-        if (e.lengthComputable) {
-          const pct = Math.round((e.loaded / e.total) * 50); // 0-50 untuk baca file
-          setProgress("Membaca file (local)", pct);
-        }
-      };
-
-      reader.onerror = () => reject(new Error("Gagal membaca file"));
-      reader.onload = () => {
-        // result berupa data:...base64,xxxx
-        const result = String(reader.result || "");
-        const idx = result.indexOf("base64,");
-        if (idx < 0) return reject(new Error("Format base64 tidak valid"));
-        const base64 = result.slice(idx + 7);
-        setProgress("Base64 siap", 50);
-        resolve(base64);
-      };
-
-      reader.readAsDataURL(file);
-    });
+  const nameLower = (f.name || "").toLowerCase();
+  if (!(nameLower.endsWith(".xlsx") || nameLower.endsWith(".xls"))){
+    return alert("Hanya boleh .xlsx atau .xls");
   }
 
-  function xhrPostJSONWithProgress(url, bodyObj, key) {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", url, true);
-      xhr.setRequestHeader("Content-Type", "application/json");
-      xhr.setRequestHeader("X-Upload-Key", key);
+  el("uploadBtn").disabled = true;
+  try{
+    setProgress("Baca file", 0);
+    logLine("Status: mulai baca file...");
+    const base64 = await readFileAsBase64(f);
+    logLine("OK: File berhasil dibaca (base64).");
 
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          // 50-95 untuk progres upload request ke Worker
-          const pct = 50 + Math.round((e.loaded / e.total) * 45);
-          setProgress("Mengirim ke Worker", pct);
-        }
-      };
+    setProgress("Upload", 0);
+    logLine("Status: upload ke Worker...");
 
-      xhr.onload = () => {
-        // 95-100 untuk respon server
-        setProgress("Menunggu respon Worker", 95);
-        resolve({ status: xhr.status, text: xhr.responseText });
-      };
-
-      xhr.onerror = () => reject(new Error("Network error saat POST ke Worker"));
-      xhr.send(JSON.stringify(bodyObj));
-    });
-  }
-
-  // ================== UPLOAD ==================
-  async function upload() {
-    const key = getKey();
-    const f = el("file").files[0];
-    if (!key) return logLine("ERROR: Key belum di-set.");
-    if (!f) return logLine("ERROR: File belum dipilih.");
-
-    el("btnUpload").disabled = true;
-    setProgress("Mulai", 0);
-    logLine("Status: mulai upload...");
-
-    try {
-      // 1) read file (progress 0-50)
-      const contentBase64 = await readFileAsBase64WithProgress(f);
-      logLine("OK: File berhasil dibaca (base64).");
-
-      // 2) send to worker (progress 50-95)
-      const res = await xhrPostJSONWithProgress(ENDPOINT_UPLOAD, {
+    const res = await xhrJson(ENDPOINT_UPLOAD, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Upload-Key": key
+      },
+      bodyObj: {
         filename: f.name,
-        contentBase64
-      }, key);
-
-      // 3) handle response
-      let ok = false;
-      try {
-        const j = JSON.parse(res.text);
-        // GitHub API sukses biasanya 201
-        ok = (res.status === 201 || res.status === 200);
-        if (!ok) logLine(`ERROR: Worker/GitHub response: ${res.status} ${JSON.stringify(j)}`);
-        else logLine(`OK: Upload sukses. Status HTTP: ${res.status}`);
-      } catch {
-        // jika bukan JSON
-        ok = (res.status === 201 || res.status === 200);
-        if (!ok) logLine(`ERROR: Response non-JSON (${res.status}): ${res.text.slice(0, 200)}`);
-        else logLine(`OK: Upload sukses. Status HTTP: ${res.status}`);
+        contentBase64: base64
+      },
+      onProgress: (pct) => {
+        // progress real untuk request body (base64 json)
+        setProgress("Upload", pct);
       }
+    });
 
-      setProgress(ok ? "Selesai" : "Error", 100);
-
-      if (ok) {
-        // refresh list otomatis
-        await refreshList();
-      }
-    } catch (e) {
+    if (res.status >= 200 && res.status < 300){
+      setProgress("Selesai", 100);
+      logLine(`OK: Upload selesai. Status HTTP: ${res.status}`);
+      await refreshList();
+    } else {
       setProgress("Error", 100);
-      logLine("ERROR: " + (e?.message || e));
-    } finally {
-      updateUploadButton();
+      logLine(`ERROR: Upload gagal (${res.status}): ${res.text.slice(0, 350)}`);
+      alert("Upload gagal. Buka DevTools > Network untuk detail.");
     }
+  } catch(e){
+    setProgress("Error", 100);
+    logLine("ERROR: " + (e?.message || e));
+    alert("Upload error: " + (e?.message || e));
+  } finally {
+    el("uploadBtn").disabled = false;
   }
+}
+el("uploadBtn").addEventListener("click", doUpload);
 
-  el("btnUpload").addEventListener("click", upload);
+/** ====== LIST (ONLY EXCEL) ====== */
+async function refreshList(){
+  const key = getKey();
+  if (!key) return alert("Key belum disimpan. Isi PIN/KEY lalu klik Simpan.");
 
-  // ================== LIST & DOWNLOAD ==================
-  function fmtSize(n) {
-    if (!Number.isFinite(n)) return "-";
-    if (n < 1024) return `${n} B`;
-    if (n < 1024*1024) return `${(n/1024).toFixed(1)} KB`;
-    return `${(n/(1024*1024)).toFixed(2)} MB`;
-  }
+  el("refreshBtn").disabled = true;
+  try{
+    logLine("Status: ambil list file...");
+    const r = await fetch(ENDPOINT_LIST, {
+      method: "GET",
+      headers: { "X-Upload-Key": key }
+    });
 
-  async function refreshList() {
-    const key = getKey();
-    if (!key) {
-      logLine("ERROR: Key belum di-set. Tidak bisa list.");
+    const txt = await r.text();
+    if (!r.ok){
+      logLine(`ERROR: list gagal (${r.status}): ${txt.slice(0, 250)}`);
       return;
     }
 
-    logLine("Status: ambil list file...");
-    el("tbody").innerHTML = `<tr><td colspan="4" class="muted">Loading...</td></tr>`;
+    let data = {};
+    try { data = JSON.parse(txt); } catch {}
+    let files = (data && data.files) ? data.files : [];
 
-    try {
-      const r = await fetch(ENDPOINT_LIST, {
-        method: "GET",
-        headers: { "X-Upload-Key": key }
-      });
+    // FILTER: tampilkan hanya Excel
+    files = files.filter(f => {
+      const n = (f.name || "").toLowerCase();
+      return n.endsWith(".xlsx") || n.endsWith(".xls");
+    });
 
-      const txt = await r.text();
-      let data;
-      try { data = JSON.parse(txt); } catch { data = null; }
+    renderTable(files);
+    logLine(`OK: List sukses (${files.length} file Excel).`);
+  } catch(e){
+    logLine("ERROR: " + (e?.message || e));
+  } finally {
+    el("refreshBtn").disabled = false;
+  }
+}
+el("refreshBtn").addEventListener("click", refreshList);
 
-      if (!r.ok) {
-        el("tbody").innerHTML = `<tr><td colspan="4" class="muted">Gagal list: ${r.status}</td></tr>`;
-        logLine(`ERROR: list gagal (${r.status}): ${txt.slice(0, 200)}`);
-        return;
-      }
-
-      const files = (data && data.files) ? data.files : [];
-      if (!files.length) {
-        el("tbody").innerHTML = `<tr><td colspan="4" class="muted">Folder /uploads kosong.</td></tr>`;
-        logLine("OK: List sukses, tapi folder kosong.");
-        return;
-      }
-
-      el("tbody").innerHTML = files.map(f => `
-        <tr>
-          <td>${f.name}</td>
-          <td>${fmtSize(f.size)}</td>
-          <td><a href="${f.html_url}" target="_blank" rel="noreferrer">View</a></td>
-          <td><button class="secondary" data-dl="${encodeURIComponent(f.name)}">Download</button></td>
-        </tr>
-      `).join("");
-
-      // bind download buttons
-      el("tbody").querySelectorAll("button[data-dl]").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const name = decodeURIComponent(btn.getAttribute("data-dl") || "");
-          await downloadFile(name);
-        });
-      });
-
-      logLine(`OK: List sukses (${files.length} file).`);
-    } catch (e) {
-      el("tbody").innerHTML = `<tr><td colspan="4" class="muted">Network error.</td></tr>`;
-      logLine("ERROR: " + (e?.message || e));
-    }
+/** ====== TABLE RENDER ====== */
+function renderTable(files){
+  const tb = el("tbody");
+  if (!files.length){
+    tb.innerHTML = `<tr><td colspan="4" class="small">Tidak ada file Excel di <code>/uploads</code>.</td></tr>`;
+    return;
   }
 
-  async function downloadFile(name) {
-    const key = getKey();
-    if (!key) return logLine("ERROR: Key belum di-set. Tidak bisa download.");
+  tb.innerHTML = files.map(f => {
+    const size = f.size ? bytesToMB(f.size) + " MB" : "-";
+    const viewUrl = f.html_url || "#";
+    const encName = encodeURIComponent(f.name || "");
+    return `
+      <tr>
+        <td><b>${escapeHtml(f.name || "")}</b><div class="small">${escapeHtml(f.path || "")}</div></td>
+        <td class="right">${size}</td>
+        <td><a href="${viewUrl}" target="_blank" rel="noopener">View</a></td>
+        <td>
+          <button class="btn secondary" data-dl="${encName}">Download</button>
+          <button class="btn gray" data-del="${encName}">Hapus</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
 
-    logLine(`Status: download ${name}...`);
-    try {
-      const r = await fetch(`${ENDPOINT_DL}?name=${encodeURIComponent(name)}`, {
-        method: "GET",
-        headers: { "X-Upload-Key": key }
-      });
+  // bind download
+  tb.querySelectorAll("button[data-dl]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const name = decodeURIComponent(btn.getAttribute("data-dl") || "");
+      await downloadFile(name);
+    });
+  });
 
-      if (!r.ok) {
-        const t = await r.text();
-        logLine(`ERROR: download gagal (${r.status}): ${t.slice(0, 200)}`);
-        return;
-      }
+  // bind delete
+  tb.querySelectorAll("button[data-del]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const name = decodeURIComponent(btn.getAttribute("data-del") || "");
+      await deleteFile(name);
+    });
+  });
+}
 
-      const blob = await r.blob();
-      const url = URL.createObjectURL(blob);
+function escapeHtml(s){
+  return String(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
 
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+/** ====== DOWNLOAD (via Worker) ====== */
+async function downloadFile(name){
+  const key = getKey();
+  if (!key) return alert("Key belum disimpan.");
 
-      URL.revokeObjectURL(url);
-      logLine("OK: Download selesai.");
-    } catch (e) {
-      logLine("ERROR: " + (e?.message || e));
+  logLine(`Status: download ${name}...`);
+  try{
+    const url = ENDPOINT_DL + "?filename=" + encodeURIComponent(name);
+    const r = await fetch(url, { headers: { "X-Upload-Key": key } });
+    if (!r.ok){
+      const t = await r.text();
+      logLine(`ERROR: download gagal (${r.status}): ${t.slice(0, 250)}`);
+      return;
     }
+    const blob = await r.blob();
+    const a = document.createElement("a");
+    const objUrl = URL.createObjectURL(blob);
+    a.href = objUrl;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(objUrl);
+    logLine("OK: download siap.");
+  } catch(e){
+    logLine("ERROR: " + (e?.message || e));
   }
+}
 
-  el("btnList").addEventListener("click", refreshList);
+/** ====== DELETE (via Worker) ====== */
+async function deleteFile(name){
+  const key = getKey();
+  if (!key) return alert("Key belum disimpan.");
 
-  // init
-  updateKeyUI();
+  const ok = confirm(`Yakin hapus file ini?\n\n${name}`);
+  if (!ok) return;
+
+  logLine(`Status: hapus ${name}...`);
+  try{
+    const r = await fetch(ENDPOINT_DELETE, {
+      method: "POST",
+      headers: {
+        "Content-Type":"application/json",
+        "X-Upload-Key": key
+      },
+      body: JSON.stringify({ filename: name })
+    });
+
+    const t = await r.text();
+    if (!r.ok){
+      logLine(`ERROR: hapus gagal (${r.status}): ${t.slice(0, 250)}`);
+      alert("Hapus gagal. Cek log.");
+      return;
+    }
+
+    logLine("OK: file berhasil dihapus.");
+    await refreshList();
+  } catch(e){
+    logLine("ERROR: " + (e?.message || e));
+  }
+}
+
+// auto list setelah load (kalau key ada)
+window.addEventListener("load", () => {
+  if (getKey()) refreshList();
+});
 </script>
 </body>
 </html>
