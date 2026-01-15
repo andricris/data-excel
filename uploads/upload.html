@@ -1,191 +1,177 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Upload Excel ke GitHub</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
   <style>
-    body{font-family:Arial,sans-serif;background:#f4f6f8;padding:40px}
-    .box{max-width:560px;margin:auto;background:#fff;padding:24px;border-radius:12px;box-shadow:0 10px 25px rgba(0,0,0,.1)}
-    h3{margin:0 0 14px}
-    button{width:100%;padding:12px;margin-top:12px;background:#2563eb;color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:700}
-    button:disabled{opacity:.6;cursor:not-allowed}
-    .row{margin-top:10px}
+    :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    body{margin:0;background:#f4f6f8;padding:40px;color:#111}
+    .box{max-width:720px;margin:0 auto;background:#fff;padding:26px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+    h2{margin:0 0 12px}
     .muted{color:#6b7280;font-size:12px;margin-top:6px}
-    .barwrap{margin-top:12px;background:#e5e7eb;border-radius:999px;overflow:hidden;height:12px}
-    .bar{height:12px;width:0%;background:#22c55e;transition:width .15s}
-    .status{margin-top:12px;background:#111;color:#0f0;padding:12px;border-radius:10px;font-size:12px;max-height:240px;overflow:auto;white-space:pre-wrap}
-    .kpi{display:flex;gap:10px;margin-top:10px}
-    .chip{flex:1;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:10px}
+    .row{margin-top:12px}
+    button{width:100%;padding:12px;margin-top:14px;background:#2563eb;color:#fff;border:0;border-radius:10px;cursor:pointer;font-weight:700}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .kpi{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+    .chip{flex:1;min-width:180px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:10px}
     .chip b{display:block;font-size:12px;color:#6b7280}
-    .chip span{font-size:14px}
-    .warn{color:#f59e0b}
-    .err{color:#ef4444}
+    .chip span{display:block;font-size:14px;margin-top:2px}
+    .barwrap{margin-top:12px;height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+    .bar{height:12px;width:0%;background:#22c55e;transition:width .15s}
+    .log{margin-top:12px;background:#0b1220;color:#d1fae5;border-radius:12px;padding:12px;white-space:pre-wrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;max-height:240px;overflow:auto}
+    .danger{color:#fecaca}
+    .ok{color:#bbf7d0}
   </style>
 </head>
 <body>
+  <div class="box">
+    <h2>Upload Excel ke GitHub</h2>
 
-<div class="box">
-  <h3>Upload Excel ke GitHub</h3>
+    <div class="row">
+      <input type="file" id="file" accept=".xlsx,.xls,.csv" />
+      <div class="muted" id="fileInfo">Belum ada file dipilih</div>
+    </div>
 
-  <div class="row">
-    <input type="file" id="file" accept=".xlsx,.xls" />
-    <div class="muted" id="fileInfo">Belum ada file dipilih</div>
+    <div class="kpi">
+      <div class="chip"><b>Tahap</b><span id="phase">Idle</span></div>
+      <div class="chip"><b>Progress</b><span id="pct">0%</span></div>
+    </div>
+
+    <div class="barwrap"><div class="bar" id="bar"></div></div>
+
+    <button id="btn" onclick="upload()">Upload</button>
+
+    <div class="log" id="log">Status: menunggu upload...</div>
   </div>
-
-  <div class="kpi">
-    <div class="chip"><b>Tahap</b><span id="phase">Idle</span></div>
-    <div class="chip"><b>Progress</b><span id="pct">0%</span></div>
-  </div>
-
-  <div class="barwrap"><div class="bar" id="bar"></div></div>
-
-  <button id="btn" onclick="upload()">Upload</button>
-
-  <div class="status" id="log">Status: menunggu upload...</div>
-</div>
 
 <script>
-/** GANTI jika URL worker kamu berubah */
-const WORKER_URL = "https://upload-excel-github-api.crissrnanto6.workers.dev";
+/**
+ * WAJIB: isi dengan URL Worker Anda (bukan halaman preview, tapi URL worker yang bisa diakses).
+ * Contoh:
+ * https://upload-excel-github-api.crissrinanto6.workers.dev
+ */
+const WORKER_URL = "https://upload-excel-github-api.crissrinanto6.workers.dev"; // <-- GANTI
 
 const el = (id) => document.getElementById(id);
 
-function setProgress(phase, pct) {
+function setProgress(phase, pct){
   el("phase").textContent = phase;
   el("pct").textContent = `${pct}%`;
   el("bar").style.width = `${pct}%`;
 }
 
-function logLine(msg) {
-  el("log").textContent = `${msg}\n` + el("log").textContent;
+function logLine(msg, type="ok"){
+  const prefix = type === "danger" ? "ERROR: " : "OK: ";
+  el("log").textContent = `${prefix}${msg}\n` + el("log").textContent;
+  el("log").scrollTop = 0;
 }
 
 el("file").addEventListener("change", () => {
   const f = el("file").files[0];
-  if (!f) {
+  if(!f){
     el("fileInfo").textContent = "Belum ada file dipilih";
     return;
   }
-  const mb = (f.size / (1024 * 1024)).toFixed(2);
+  const mb = (f.size / (1024*1024)).toFixed(2);
   el("fileInfo").textContent = `File: ${f.name} (${mb} MB)`;
 });
 
-/**
- * Convert ArrayBuffer -> base64 dengan progress (tahap encoding)
- */
-function arrayBufferToBase64WithProgress(buffer, onProgress) {
-  const bytes = new Uint8Array(buffer);
-  const total = bytes.length;
-  const chunkSize = 0x8000; // 32KB
-  let binary = "";
-
-  for (let i = 0; i < total; i += chunkSize) {
-    const chunk = bytes.subarray(i, i + chunkSize);
-    binary += String.fromCharCode.apply(null, chunk);
-
-    const p = Math.min(100, Math.floor((i / total) * 100));
-    onProgress(p);
-  }
-
-  onProgress(100);
-  return btoa(binary);
+function safeName(name){
+  // aman buat path github
+  return name.replace(/[^\w.\-]+/g, "_");
 }
 
-/**
- * POST JSON via XHR agar upload progress bisa terlihat.
- * (fetch belum reliable untuk upload progress)
- */
-function xhrPostJson(url, bodyObj, onUploadProgress) {
+function readAsBase64(file){
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onerror = () => reject(new Error("Gagal membaca file"));
+    r.onload = () => {
+      const res = r.result; // data:...;base64,xxxx
+      const base64 = String(res).split(",")[1] || "";
+      resolve(base64);
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+async function upload(){
+  const f = el("file").files[0];
+  if(!f){
+    alert("Pilih file dulu.");
+    return;
+  }
+
+  el("btn").disabled = true;
+  el("log").textContent = "Status: mulai...\n";
+
+  try{
+    setProgress("Baca file", 5);
+    logLine("Mulai baca file ke memory...");
+    const base64 = await readAsBase64(f);
+    logLine("File berhasil dibaca (base64).");
+
+    setProgress("Kirim ke Worker", 10);
+    const payload = {
+      filename: safeName(f.name),
+      contentBase64: base64
+      // OPTIONAL kalau worker Anda mendukung:
+      // path: "uploads",
+      // message: "upload file via web"
+    };
+
+    // Pakai XHR agar ada progress upload "real"
+    await xhrPostJson(`${WORKER_URL}/upload`, payload);
+
+    setProgress("Selesai", 100);
+    logLine("Upload selesai. Cek repo GitHub Anda.", "ok");
+
+  }catch(err){
+    setProgress("Error", 100);
+    logLine(err.message || String(err), "danger");
+  }finally{
+    el("btn").disabled = false;
+  }
+}
+
+function xhrPostJson(url, data){
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url, true);
     xhr.setRequestHeader("Content-Type", "application/json");
 
-    // Pastikan tidak mengirim credentials
-    // (XMLHttpRequest default sudah tanpa credentials untuk cross-origin,
-    //  kecuali withCredentials = true)
-    xhr.withCredentials = false;
-
-    xhr.upload.onprogress = (evt) => {
-      if (evt.lengthComputable) {
-        const pct = Math.round((evt.loaded / evt.total) * 100);
-        onUploadProgress(pct);
+    // Progress upload (yang benar-benar upload, bukan sekadar baca file)
+    xhr.upload.onprogress = (e) => {
+      if(e.lengthComputable){
+        const pct = Math.max(10, Math.round(10 + (e.loaded / e.total) * 80)); // 10..90
+        setProgress("Upload (network)", pct);
+      }else{
+        setProgress("Upload (network)", 30);
       }
     };
 
     xhr.onload = () => {
-      const status = xhr.status;
-      const text = xhr.responseText || "";
-      let json;
-      try { json = JSON.parse(text); } catch { json = { raw: text }; }
-      resolve({ status, json, raw: text });
+      const ok = xhr.status >= 200 && xhr.status < 300;
+      if(!ok){
+        reject(new Error(`Worker error ${xhr.status}: ${xhr.responseText || "No body"}`));
+        return;
+      }
+      // sukses
+      try{
+        const json = JSON.parse(xhr.responseText || "{}");
+        if(json && json.ok === false){
+          reject(new Error(json.error || "Upload gagal"));
+          return;
+        }
+      }catch(_){}
+      setProgress("Finalize", 95);
+      resolve(true);
     };
 
-    xhr.onerror = () => reject(new Error("Network error / CORS blocked"));
-    xhr.send(JSON.stringify(bodyObj));
+    xhr.onerror = () => reject(new Error("Network error / CORS blocked (cek CORS Worker & preflight OPTIONS)"));
+    xhr.send(JSON.stringify(data));
   });
 }
-
-async function upload() {
-  const f = el("file").files[0];
-  if (!f) return alert("Pilih file Excel dulu");
-
-  el("btn").disabled = true;
-  el("log").textContent = "Status: mulai...\n";
-  setProgress("Reading file", 0);
-
-  try {
-    // 1) Read file
-    const buffer = await f.arrayBuffer();
-    logLine("OK: File dibaca ke memory.");
-
-    // 2) Encode base64 (0-60%)
-    setProgress("Encoding base64", 0);
-    const base64 = arrayBufferToBase64WithProgress(buffer, (p) => {
-      const mapped = Math.round(p * 0.6);
-      setProgress("Encoding base64", mapped);
-    });
-    logLine("OK: Base64 selesai.");
-
-    // 3) Upload (60-100%)
-    setProgress("Uploading", 60);
-    const { status, json, raw } = await xhrPostJson(
-      WORKER_URL,
-      {
-        filename: f.name,
-        contentBase64: base64
-      },
-      (p) => {
-        const mapped = 60 + Math.round(p * 0.4);
-        setProgress("Uploading", mapped);
-      }
-    );
-
-    logLine(`HTTP status: ${status}`);
-
-    // 4) Interpret result
-    if (status >= 200 && status < 300) {
-      setProgress("Done", 100);
-      logLine("SUKSES: Upload selesai.");
-      logLine(JSON.stringify(json, null, 2));
-    } else {
-      setProgress("Finished (error)", 100);
-      logLine("GAGAL: Worker/GitHub mengembalikan error.");
-      logLine("Response JSON / raw:");
-      logLine(JSON.stringify(json, null, 2));
-      if (raw && raw !== JSON.stringify(json)) logLine(raw);
-    }
-  } catch (err) {
-    setProgress("Error", 100);
-    logLine("ERROR: " + err.message);
-    logLine("Catatan: Jika ini 'Network error / CORS', berarti preflight/headers di Worker belum benar.");
-  } finally {
-    el("btn").disabled = false;
-  }
-}
 </script>
-
 </body>
 </html>
