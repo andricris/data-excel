@@ -1,25 +1,27 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Upload Excel ke GitHub</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
     body{font-family:Arial,sans-serif;background:#f4f6f8;padding:40px}
-    .box{max-width:520px;margin:auto;background:#fff;padding:24px;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,.1)}
+    .box{max-width:560px;margin:auto;background:#fff;padding:24px;border-radius:12px;box-shadow:0 10px 25px rgba(0,0,0,.1)}
     h3{margin:0 0 14px}
-    button{width:100%;padding:12px;margin-top:12px;background:#2563eb;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600}
+    button{width:100%;padding:12px;margin-top:12px;background:#2563eb;color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:700}
     button:disabled{opacity:.6;cursor:not-allowed}
     .row{margin-top:10px}
     .muted{color:#6b7280;font-size:12px;margin-top:6px}
     .barwrap{margin-top:12px;background:#e5e7eb;border-radius:999px;overflow:hidden;height:12px}
     .bar{height:12px;width:0%;background:#22c55e;transition:width .15s}
-    .status{margin-top:12px;background:#111;color:#0f0;padding:10px;border-radius:8px;font-size:12px;max-height:220px;overflow:auto}
+    .status{margin-top:12px;background:#111;color:#0f0;padding:12px;border-radius:10px;font-size:12px;max-height:240px;overflow:auto;white-space:pre-wrap}
     .kpi{display:flex;gap:10px;margin-top:10px}
-    .chip{flex:1;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:10px}
+    .chip{flex:1;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:10px}
     .chip b{display:block;font-size:12px;color:#6b7280}
     .chip span{font-size:14px}
+    .warn{color:#f59e0b}
+    .err{color:#ef4444}
   </style>
 </head>
 <body>
@@ -28,7 +30,7 @@
   <h3>Upload Excel ke GitHub</h3>
 
   <div class="row">
-    <input type="file" id="file" accept=".xlsx,.xls">
+    <input type="file" id="file" accept=".xlsx,.xls" />
     <div class="muted" id="fileInfo">Belum ada file dipilih</div>
   </div>
 
@@ -37,9 +39,7 @@
     <div class="chip"><b>Progress</b><span id="pct">0%</span></div>
   </div>
 
-  <div class="barwrap">
-    <div class="bar" id="bar"></div>
-  </div>
+  <div class="barwrap"><div class="bar" id="bar"></div></div>
 
   <button id="btn" onclick="upload()">Upload</button>
 
@@ -47,17 +47,20 @@
 </div>
 
 <script>
+/** GANTI jika URL worker kamu berubah */
 const WORKER_URL = "https://upload-excel-github-api.crissrnanto6.workers.dev";
 
 const el = (id) => document.getElementById(id);
-const log = (msg) => {
-  el("log").textContent = msg + "\n\n" + el("log").textContent;
-};
-const setProgress = (phase, pct) => {
+
+function setProgress(phase, pct) {
   el("phase").textContent = phase;
   el("pct").textContent = `${pct}%`;
   el("bar").style.width = `${pct}%`;
-};
+}
+
+function logLine(msg) {
+  el("log").textContent = `${msg}\n` + el("log").textContent;
+}
 
 el("file").addEventListener("change", () => {
   const f = el("file").files[0];
@@ -69,45 +72,58 @@ el("file").addEventListener("change", () => {
   el("fileInfo").textContent = `File: ${f.name} (${mb} MB)`;
 });
 
+/**
+ * Convert ArrayBuffer -> base64 dengan progress (tahap encoding)
+ */
 function arrayBufferToBase64WithProgress(buffer, onProgress) {
-  // Konversi ke base64 sambil update progress (estimasi)
   const bytes = new Uint8Array(buffer);
+  const total = bytes.length;
   const chunkSize = 0x8000; // 32KB
   let binary = "";
-  const total = bytes.length;
+
   for (let i = 0; i < total; i += chunkSize) {
     const chunk = bytes.subarray(i, i + chunkSize);
     binary += String.fromCharCode.apply(null, chunk);
-    const pct = Math.min(100, Math.floor((i / total) * 100));
-    onProgress(pct);
+
+    const p = Math.min(100, Math.floor((i / total) * 100));
+    onProgress(p);
   }
+
   onProgress(100);
   return btoa(binary);
 }
 
-function xhrPostJsonWithUploadProgress(url, bodyObj, onProgress) {
+/**
+ * POST JSON via XHR agar upload progress bisa terlihat.
+ * (fetch belum reliable untuk upload progress)
+ */
+function xhrPostJson(url, bodyObj, onUploadProgress) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url, true);
     xhr.setRequestHeader("Content-Type", "application/json");
 
+    // Pastikan tidak mengirim credentials
+    // (XMLHttpRequest default sudah tanpa credentials untuk cross-origin,
+    //  kecuali withCredentials = true)
+    xhr.withCredentials = false;
+
     xhr.upload.onprogress = (evt) => {
       if (evt.lengthComputable) {
         const pct = Math.round((evt.loaded / evt.total) * 100);
-        onProgress(pct);
+        onUploadProgress(pct);
       }
     };
 
     xhr.onload = () => {
-      try {
-        const json = JSON.parse(xhr.responseText || "{}");
-        resolve({ status: xhr.status, json });
-      } catch (e) {
-        resolve({ status: xhr.status, json: { raw: xhr.responseText } });
-      }
+      const status = xhr.status;
+      const text = xhr.responseText || "";
+      let json;
+      try { json = JSON.parse(text); } catch { json = { raw: text }; }
+      resolve({ status, json, raw: text });
     };
 
-    xhr.onerror = () => reject(new Error("Network error / CORS"));
+    xhr.onerror = () => reject(new Error("Network error / CORS blocked"));
     xhr.send(JSON.stringify(bodyObj));
   });
 }
@@ -123,43 +139,48 @@ async function upload() {
   try {
     // 1) Read file
     const buffer = await f.arrayBuffer();
-    log("File dibaca ke memory.");
+    logLine("OK: File dibaca ke memory.");
 
-    // 2) Encode base64 (progress)
+    // 2) Encode base64 (0-60%)
     setProgress("Encoding base64", 0);
     const base64 = arrayBufferToBase64WithProgress(buffer, (p) => {
-      // Encoding kita tampilkan 0-60%
       const mapped = Math.round(p * 0.6);
       setProgress("Encoding base64", mapped);
     });
-    log("Base64 selesai.");
+    logLine("OK: Base64 selesai.");
 
-    // 3) Upload (progress)
+    // 3) Upload (60-100%)
     setProgress("Uploading", 60);
-    const { status, json } = await xhrPostJsonWithUploadProgress(
+    const { status, json, raw } = await xhrPostJson(
       WORKER_URL,
-      { filename: f.name, contentBase64: base64 },
+      {
+        filename: f.name,
+        contentBase64: base64
+      },
       (p) => {
-        // Upload kita map 60-100%
         const mapped = 60 + Math.round(p * 0.4);
         setProgress("Uploading", mapped);
       }
     );
 
-    log(`HTTP status: ${status}`);
-    log(JSON.stringify(json, null, 2));
+    logLine(`HTTP status: ${status}`);
 
-    if (status >= 200 && status < 300 && json?.content?.path) {
+    // 4) Interpret result
+    if (status >= 200 && status < 300) {
       setProgress("Done", 100);
-      log("SUKSES: File tersimpan di GitHub.");
-      log(`Path: ${json.content.path}`);
+      logLine("SUKSES: Upload selesai.");
+      logLine(JSON.stringify(json, null, 2));
     } else {
-      setProgress("Finished (check response)", 100);
-      log("SELESAI tapi ada indikasi error. Lihat JSON di atas.");
+      setProgress("Finished (error)", 100);
+      logLine("GAGAL: Worker/GitHub mengembalikan error.");
+      logLine("Response JSON / raw:");
+      logLine(JSON.stringify(json, null, 2));
+      if (raw && raw !== JSON.stringify(json)) logLine(raw);
     }
   } catch (err) {
     setProgress("Error", 100);
-    log("ERROR: " + err.message);
+    logLine("ERROR: " + err.message);
+    logLine("Catatan: Jika ini 'Network error / CORS', berarti preflight/headers di Worker belum benar.");
   } finally {
     el("btn").disabled = false;
   }
